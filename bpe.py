@@ -9,7 +9,11 @@ Naming convention:
 from collections import Counter
 from dataclasses import dataclass
 import heapq
+
 from typing import Iterable, Self
+
+
+GPT2_PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
 def tokenize(corpus: str, max_vocab_size: int, special_tokens: list[str]):
     vocabulary: tuple[bytes] = ()
@@ -24,12 +28,41 @@ def tokenize(corpus: str, max_vocab_size: int, special_tokens: list[str]):
 
     while len(vocabulary) < max_vocab_size:
         pass
-        
 
-def pre_tokenize():
-    # TODO: Use GPT-2 regex
-    # LATER: parallelization
+
+def pre_tokenize_embarassingly_parallel(chunks: Iterable[str], end_token_str: str):
+    # SOMEDAY
     pass
+
+
+def pre_tokenize(corpus: str, end_token_str: str) -> dict[bytes, int]:
+    chunks: list[str] = corpus.split(end_token_str)
+    vocabulary = ()
+    token_to_token_id = {}
+
+    # Add special tokens
+    # # NOTE: No support for general special tokens yet.
+    # special_token_strs = [end_token_str]  # TODO: use parameter instead
+    # for s in special_tokens_strs:
+    #     token = s.encode()
+    #     if token not in token_to_token_id.keys():
+    #         token_to_token_id[token] = len(token_to_token_id)
+
+    # Add tokens corresponding to each byte 0-255
+    for i in range(256):
+        token = bytes([i])
+        if token not in token_to_token_id.keys():
+            token_to_token_id[token] = len(token_to_token_id)
+
+    # Add all other tokens
+    token_to_token_id.append()
+    for chunk in chunks:
+        for match in regex.finditer(GPT2_PAT, document):
+            next_tok = match.group().encode()
+            if next_tok not in token_to_token_id.keys():
+                token_to_token_id[next_tok] = len(token_to_token_id)
+                token_to_token_id.append(next_tok)
+    return token_to_token_id
 
 
 class LinkedList:
