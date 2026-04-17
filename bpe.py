@@ -13,13 +13,42 @@ import heapq
 from typing import Iterable, Self
 
 
-GPT2_PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+class LinkedList:
+    class Node:
+        content: int
+        prev: Self | None
+        next: Self | None
+        def __init__(self, content):
+            self.content = content
 
-def tokenize(corpus: str, max_vocab_size: int, special_tokens: list[str]):
-    vocab_dict: dict[bytes, int] = ()
+    sentinel: Node
+    def __init__(self):
+        self.sentinel = Node(-1)
+        self.sentinel.prev = self.sentinel.next = self.sentinel
+
+    def append(self, content) -> Node:
+        last = self.sentinel.prev
+        node = last.next = self.sentinel.prev = Node(content)
+        node.prev, node.next = last, self.sentinel
+        return node
+
+    @property
+    def first(self):
+        if self.sentinel.next is self.sentinel:
+            return None
+        return self.sentinel.next
+
+    @property
+    def last(self):
+        if self.sentinel.prev is self.sentinel:
+            return None
+        return self.sentinel.prev
+
+
+def tokenize(corpus: str, max_vocab_size: int, special_token_strs: list[str]):
+    vocab_dict, token_id_ll = pre_tokenize(corpus)
     bigram_to_count: dict[tuple[int, int], int] = Counter()
     bigram_heap_lazy: list[tuple[int, bytes, int, int]] = []  # (-count, token, id_a, id_b)
-    token_id_lists: list[LinkedList] = LinkedList()
     bigram_to_nodes_lazy: dict[tuple[int, int], list[Node[int]]]  = {}
 
     while len(vocabulary) < max_vocab_size:
@@ -31,9 +60,11 @@ def pre_tokenize_embarassingly_parallel(chunks: Iterable[str], end_token_str: st
     pass
 
 
-def pre_tokenize(corpus: str, end_token_str: str) -> dict[bytes, int]:
+def pre_tokenize(corpus: str, end_token_str: str) -> tuple[dict[bytes, int], LinkedList]:
+    GPT2_PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
     chunks: list[str] = corpus.split(end_token_str)
     vocab_dict: dict[bytes, int] = {}
+    ll = LinkedList()
 
     # Add special tokens
     # # NOTE: No support for general special tokens yet.
@@ -54,27 +85,9 @@ def pre_tokenize(corpus: str, end_token_str: str) -> dict[bytes, int]:
     for chunk in chunks:
         for match in regex.finditer(GPT2_PAT, document):
             next_tok = match.group().encode()
+            ll.append(next_tok)
             if next_tok not in vocab_dict.keys():
                 vocab_dict[next_tok] = len(vocab_dict)
                 vocab_dict.append(next_tok)
-    return vocab_dict
-
-
-class LinkedList:
-    class Node:
-        content: int
-        prev: Self | None
-        next: Self | None
-        def __init__(self, content):
-            self.content = content
-
-    sentinel: Node
-    def __init__(self):
-        self.sentinel = Node(-1)
-        self.sentinel.prev = self.sentinel.next = self.sentinel
-
-    def append(self, content) -> Node:
-        last = self.sentinel.prev
-        node = last.next = self.sentinel.prev = Node(content)
-        node.prev, node.next = last, self.sentinel
-        return node
+        ll.append(end_token_str.encode())
+    return vocab_dict, ll
