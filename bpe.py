@@ -7,11 +7,13 @@ Naming convention:
     - token or tok (bytes) refer to the content of a token
 """
 from collections import Counter
+from dataclasses import dataclass
 import heapq
+from typing import Iterable, Self
 
 def tokenize(corpus: str, max_vocab_size: int, special_tokens: list[str]):
     vocabulary: tuple[bytes] = ()
-    vocab_set: set[bytes] = set()
+    token_to_token_id: dict[bytes, int]
     bigram_to_count: dict[tuple[int, int], int] = Counter()
     bigram_heap_lazy: list[tuple[int, bytes, int, int]] = []  # (-count, token, id_a, id_b)
     token_id_lists: list[LinkedList] = LinkedList()
@@ -28,3 +30,23 @@ def pre_tokenize():
     # TODO: Use GPT-2 regex
     # LATER: parallelization
     pass
+
+
+class LinkedList:
+    class Node:
+        content: int
+        prev: Self | None
+        next: Self | None
+        def __init__(self, content):
+            self.content = content
+
+    sentinel: Node
+    def __init__(self):
+        self.sentinel = Node(-1)
+        self.sentinel.prev = self.sentinel.next = self.sentinel
+
+    def append(self, content) -> Node:
+        last = self.sentinel.prev
+        node = last.next = self.sentinel.prev = Node(content)
+        node.prev, node.next = last, self.sentinel
+        return node
