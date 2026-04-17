@@ -16,15 +16,11 @@ from typing import Iterable, Self
 GPT2_PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
 def tokenize(corpus: str, max_vocab_size: int, special_tokens: list[str]):
-    vocabulary: tuple[bytes] = ()
-    token_to_token_id: dict[bytes, int]
+    vocab_dict: dict[bytes, int] = ()
     bigram_to_count: dict[tuple[int, int], int] = Counter()
     bigram_heap_lazy: list[tuple[int, bytes, int, int]] = []  # (-count, token, id_a, id_b)
     token_id_lists: list[LinkedList] = LinkedList()
     bigram_to_nodes_lazy: dict[tuple[int, int], list[Node[int]]]  = {}
-
-    # Edge Case: suppose we have two different bigram merges resulting the the same token.
-    #   This should result in the same token_id.
 
     while len(vocabulary) < max_vocab_size:
         pass
@@ -37,32 +33,31 @@ def pre_tokenize_embarassingly_parallel(chunks: Iterable[str], end_token_str: st
 
 def pre_tokenize(corpus: str, end_token_str: str) -> dict[bytes, int]:
     chunks: list[str] = corpus.split(end_token_str)
-    vocabulary = ()
-    token_to_token_id = {}
+    vocab_dict: dict[bytes, int] = {}
 
     # Add special tokens
     # # NOTE: No support for general special tokens yet.
     # special_token_strs = [end_token_str]  # TODO: use parameter instead
     # for s in special_tokens_strs:
     #     token = s.encode()
-    #     if token not in token_to_token_id.keys():
-    #         token_to_token_id[token] = len(token_to_token_id)
+    #     if token not in vocab_dict.keys():
+    #         vocab_dict[token] = len(vocab_dict)
 
     # Add tokens corresponding to each byte 0-255
     for i in range(256):
         token = bytes([i])
-        if token not in token_to_token_id.keys():
-            token_to_token_id[token] = len(token_to_token_id)
+        if token not in vocab_dict.keys():
+            vocab_dict[token] = len(vocab_dict)
 
     # Add all other tokens
-    token_to_token_id.append()
+    vocab_dict.append()
     for chunk in chunks:
         for match in regex.finditer(GPT2_PAT, document):
             next_tok = match.group().encode()
-            if next_tok not in token_to_token_id.keys():
-                token_to_token_id[next_tok] = len(token_to_token_id)
-                token_to_token_id.append(next_tok)
-    return token_to_token_id
+            if next_tok not in vocab_dict.keys():
+                vocab_dict[next_tok] = len(vocab_dict)
+                vocab_dict.append(next_tok)
+    return vocab_dict
 
 
 class LinkedList:
